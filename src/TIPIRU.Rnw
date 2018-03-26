@@ -1,0 +1,189 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage[T2A]{fontenc}
+\usepackage{hyperref}
+\usepackage{float}
+\begin{document}
+
+\section{Data preprocessing}
+<<>>=
+source("functions.R")
+d1 <- preprocess(read.csv("../data/Survey1.csv", header = T))
+d2 <- preprocess(read.csv("../data/Survey2.csv", header = T))
+d3 <- preprocess(read.csv("../data/Survey3.csv", header = T))
+v.5pfq <- count5PFQ(d1)
+v.TIPI <- countTIPI(d1)
+@
+\section{Age and gender distributions}
+\subsection{Main sample}
+<<size="scriptsize">>=
+summary(d1["Age"])
+summary(d1["Sex"])
+hist(
+  d1[["Age"]], breaks = 50, 
+  main="Histogram for Age of the main sample"
+)
+@
+\subsection{Test and retest samples}
+<<size="scriptsize">>=
+summary(d2["Age"])
+summary(d2["Sex"])
+summary(d3["Age"])
+summary(d3["Sex"])
+par(mfrow=c(1,2))
+hist(d2[["Age"]], breaks = 30, main = "Test")
+hist(d3[["Age"]], breaks = 30, main = "Retest")
+@
+\section{Internal consistency}
+<<size="scriptsize">>=
+extraversion.5pfq <- data.frame(
+    d1$X16, d1$X21, d1$X26, d1$X1, d1$X6, d1$X11, d1$X31, d1$X36, d1$X41,
+    d1$X46, d1$X51, d1$X56, d1$X61, d1$X66, d1$X71
+)
+agreableness.5pfq <- data.frame(
+    d1$X7, d1$X12, d1$X2, d1$X17, d1$X22, d1$X27, d1$X32, d1$X37, d1$X42,
+    d1$X47, d1$X52, d1$X57, d1$X62, d1$X67, d1$X72
+)
+conscientiousness.5pfq <- data.frame(
+    d1$X3, d1$X8, d1$X13, d1$X18, d1$X23, d1$X28, d1$X33, d1$X38, d1$X43,
+    d1$X48, d1$X53, d1$X58, d1$X63, d1$X68, d1$X73
+)
+emotional.stability.5pfq <- data.frame(
+    d1$X4, d1$X9, d1$X14, d1$X19, d1$X24, d1$X29, d1$X34, d1$X39, d1$X44,
+    d1$X49, d1$X54, d1$X59, d1$X64, d1$X69, d1$X74
+)
+openness.5pfq <- data.frame(
+    d1$X5, d1$X10, d1$X15, d1$X65, d1$X70, d1$X75, d1$X50, d1$X55, d1$X60,
+    d1$X35, d1$X40, d1$X45, d1$X20, d1$X25, d1$X30
+)
+@
+\subsection{McDonald's omega}
+<<size="scriptsize">>=
+options(warn=-1)
+omegas <- data.frame(
+    c(
+        getOmega2(v.TIPI$TIPI1, v.TIPI$TIPI6),
+        getOmega2(v.TIPI$TIPI7, v.TIPI$TIPI2),
+        getOmega2(v.TIPI$TIPI3, v.TIPI$TIPI8),
+        getOmega2(v.TIPI$TIPI9, v.TIPI$TIPI4),
+        getOmega2(v.TIPI$TIPI5, v.TIPI$TIPI10)
+    ),
+    c(
+        omega(extraversion.5pfq, nfactors = 1)[["omega.tot"]],
+        omega(agreableness.5pfq, nfactors = 1)[["omega.tot"]],
+        omega(conscientiousness.5pfq, nfactors = 1)[["omega.tot"]],
+        omega(emotional.stability.5pfq, nfactors = 1)[["omega.tot"]],
+        omega(openness.5pfq, nfactors = 1)[["omega.tot"]]
+    )
+)
+rownames(omegas) <- c("E", "A", "C", "ES", "O")
+colnames(omegas) <- c("TIPI", "5PFQ")
+omegas <- t(omegas)
+options(warn=0)
+omegas
+@
+\subsection{Cronbach's alpha}
+<<>>=
+alphas <- data.frame(
+    c(
+        getAlpha(v.TIPI$TIPI1, v.TIPI$TIPI6),
+        getAlpha(v.TIPI$TIPI7, v.TIPI$TIPI2),
+        getAlpha(v.TIPI$TIPI3, v.TIPI$TIPI8),
+        getAlpha(v.TIPI$TIPI9, v.TIPI$TIPI4),
+        getAlpha(v.TIPI$TIPI5, v.TIPI$TIPI10)
+    ),
+    c(
+        cronbach(extraversion.5pfq)[["alpha"]],
+        cronbach(agreableness.5pfq)[["alpha"]],
+        cronbach(conscientiousness.5pfq)[["alpha"]],
+        cronbach(emotional.stability.5pfq)[["alpha"]],
+        cronbach(openness.5pfq)[["alpha"]]
+    )
+)
+rownames(alphas) <- c("E", "A", "C", "ES", "O")
+colnames(alphas) <- c("TIPI", "5PFQ")
+alphas <- t(alphas)
+alphas
+@
+\subsection{Bootstrapped Cronbach's alpha}
+<<size="scriptsize">>=
+boot.alphas.TIPI <- data.frame(
+    bootAlpha(toCrb(v.TIPI$TIPI1, v.TIPI$TIPI6)),
+    bootAlpha(toCrb(v.TIPI$TIPI7, v.TIPI$TIPI2)),
+    bootAlpha(toCrb(v.TIPI$TIPI3, v.TIPI$TIPI8)),
+    bootAlpha(toCrb(v.TIPI$TIPI9, v.TIPI$TIPI4)),
+    bootAlpha(toCrb(v.TIPI$TIPI5, v.TIPI$TIPI10)),
+    bootAlpha(extraversion.5pfq),
+    bootAlpha(agreableness.5pfq),
+    bootAlpha(conscientiousness.5pfq),
+    bootAlpha(emotional.stability.5pfq),
+    bootAlpha(openness.5pfq)
+)
+colnames(boot.alphas.TIPI) <- c(
+    "TIPI.E", "TIPI.A", "TIPI.C", "TIPI.ES", "TIPI.O",
+    "5PFQ.E", "5PFQ.A", "5PFQ.C", "5PFQ.ES", "5PFQ.O"
+)
+rownames(boot.alphas.TIPI) <- c(
+  "q.0.025", "q.0.975", "bca.0.025", "bca.0.975"
+)
+boot.alphas.TIPI
+@
+\section{Convergent validity}
+\subsection{Pearson correlations}
+<<size="scriptsize">>=
+all <- left_join(v.5pfq, v.TIPI)
+conval <- subset(all, select=c(
+        "E.5PFQ", "A.5PFQ", "C.5PFQ", "ES.5PFQ", "O.5PFQ",
+        "E.TIPI", "A.TIPI", "C.TIPI", "ES.TIPI", "O.TIPI"
+    )
+)
+pearson.onlysame <- data.frame(
+    names=c("E", "A", "C", "ES", "O")
+)
+testresults <- sapply(
+    pearson.onlysame$names,
+    function(x) {
+        cor.test(
+            conval[[paste(x, "5PFQ", sep=".")]],
+            conval[[paste(x, "TIPI", sep=".")]]
+        )
+    }
+)
+pearson.onlysame$values <- testresults[4,]
+pearson.onlysame$p <- testresults[3,]
+pearson.onlysame
+options(warn=-1)
+chart.Correlation(
+  conval, histogram=T, pch=19, method="pearson"
+)
+options(warn=0)
+print(corr.test(conval, method="pearson"), short=F)
+@
+\subsection{Path model}
+<<size="scriptsize">>=
+model.tipi <- '
+    E.5PFQ ~ TIPI1 + TIPI6
+    A.5PFQ ~ TIPI2 + TIPI7
+    C.5PFQ ~ TIPI3 + TIPI8
+    ES.5PFQ ~ TIPI4 + TIPI9
+    O.5PFQ ~ TIPI5 + TIPI10
+'
+path <- sem(model.tipi, data=all)
+summary(path, standardized=T, fit.measures=T, rsq=T)
+@
+\section{Test-retest reliability}
+<<size="scriptsize">>=
+first.tipi <- countTIPI(d2)
+second.tipi <- countTIPI(d3)
+test.retest <- left_join(second.tipi, first.tipi, by="X")
+test.retest$X <- NULL
+for (a in colnames(test.retest)[grep("TIPI[0-9]+", colnames(test.retest))]) {
+    test.retest[[a]] <- NULL
+}
+options(warn=-1)
+chart.Correlation(test.retest, histogram=TRUE, pch=19, method = "pearson")
+options(warn=0)
+print(corr.test(test.retest, method="pearson"), short=F)
+@
+\end{document}
